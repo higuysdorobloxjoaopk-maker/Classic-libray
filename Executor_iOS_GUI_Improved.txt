@@ -1,0 +1,103 @@
+–// IOS STYLE EXECUTOR GUI (NO UICorner) //– –// Improved Visual + Fully
+Working Close Button //–
+
+local Players = game:GetService(“Players”) local player =
+Players.LocalPlayer
+
+– Remove old GUI if exists if
+player:WaitForChild(“PlayerGui”):FindFirstChild(“ExecutorIOS”) then
+player.PlayerGui.ExecutorIOS:Destroy() end
+
+– Create ScreenGui local ScreenGui = Instance.new(“ScreenGui”)
+ScreenGui.Name = “ExecutorIOS” ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild(“PlayerGui”)
+
+– Main Frame local Main = Instance.new(“Frame”) Main.Size = UDim2.new(0,
+420, 0, 260) Main.Position = UDim2.new(0.5, -210, 0.5, -130)
+Main.BackgroundColor3 = Color3.fromRGB(20,20,20) Main.BorderSizePixel =
+0 Main.Parent = ScreenGui
+
+– Top Bar local TopBar = Instance.new(“Frame”) TopBar.Size =
+UDim2.new(1,0,0,45) TopBar.BackgroundColor3 = Color3.fromRGB(28,28,28)
+TopBar.BorderSizePixel = 0 TopBar.Parent = Main
+
+– Title local Title = Instance.new(“TextLabel”) Title.Size =
+UDim2.new(1, -50, 1, 0) Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1 Title.Text = “Executor iOS Style”
+Title.Font = Enum.Font.GothamBold Title.TextSize = 16 Title.TextColor3 =
+Color3.fromRGB(255,255,255) Title.TextXAlignment =
+Enum.TextXAlignment.Left Title.Parent = TopBar
+
+– Close Button (FIXED) local Close = Instance.new(“TextButton”)
+Close.Size = UDim2.new(0,40,0,40) Close.Position = UDim2.new(1,-45,0,2)
+Close.BackgroundColor3 = Color3.fromRGB(255,59,48) Close.Text = “X”
+Close.Font = Enum.Font.GothamBold Close.TextSize = 16 Close.TextColor3 =
+Color3.fromRGB(255,255,255) Close.Parent = TopBar
+
+Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() – FULL
+CLOSE FIXED end)
+
+– Content Area local Content = Instance.new(“Frame”) Content.Size =
+UDim2.new(1,-20,1,-65) Content.Position = UDim2.new(0,10,0,55)
+Content.BackgroundColor3 = Color3.fromRGB(32,32,32)
+Content.BorderSizePixel = 0 Content.Parent = Main
+
+– iOS Style Toggle local ToggleFrame = Instance.new(“Frame”)
+ToggleFrame.Size = UDim2.new(0,60,0,28) ToggleFrame.Position =
+UDim2.new(0,20,0,20) ToggleFrame.BackgroundColor3 =
+Color3.fromRGB(60,60,60) ToggleFrame.BorderSizePixel = 0
+ToggleFrame.Parent = Content
+
+local ToggleCircle = Instance.new(“Frame”) ToggleCircle.Size =
+UDim2.new(0,24,0,24) ToggleCircle.Position = UDim2.new(0,2,0,2)
+ToggleCircle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+ToggleCircle.BorderSizePixel = 0 ToggleCircle.Parent = ToggleFrame
+
+local ToggleState = false
+
+ToggleFrame.InputBegan:Connect(function(input) if input.UserInputType ==
+Enum.UserInputType.MouseButton1 then ToggleState = not ToggleState
+
+        if ToggleState then
+            ToggleFrame.BackgroundColor3 = Color3.fromRGB(52,199,89)
+            ToggleCircle:TweenPosition(UDim2.new(1,-26,0,2), "Out", "Quad", 0.15, true)
+        else
+            ToggleFrame.BackgroundColor3 = Color3.fromRGB(60,60,60)
+            ToggleCircle:TweenPosition(UDim2.new(0,2,0,2), "Out", "Quad", 0.15, true)
+        end
+    end
+
+end)
+
+– Execute Button local Execute = Instance.new(“TextButton”) Execute.Size
+= UDim2.new(0,120,0,35) Execute.Position = UDim2.new(0,20,0,70)
+Execute.BackgroundColor3 = Color3.fromRGB(10,132,255) Execute.Text =
+“Executar” Execute.Font = Enum.Font.GothamBold Execute.TextSize = 14
+Execute.TextColor3 = Color3.fromRGB(255,255,255) Execute.BorderSizePixel
+= 0 Execute.Parent = Content
+
+– Drag System local UIS = game:GetService(“UserInputService”) local
+dragging local dragInput local dragStart local startPos
+
+local function update(input) local delta = input.Position - dragStart
+Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+startPos.Y.Scale, startPos.Y.Offset + delta.Y) end
+
+TopBar.InputBegan:Connect(function(input) if input.UserInputType ==
+Enum.UserInputType.MouseButton1 then dragging = true dragStart =
+input.Position startPos = Main.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+
+end)
+
+TopBar.InputChanged:Connect(function(input) if input.UserInputType ==
+Enum.UserInputType.MouseMovement then dragInput = input end end)
+
+UIS.InputChanged:Connect(function(input) if input == dragInput and
+dragging then update(input) end end)
