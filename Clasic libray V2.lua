@@ -1115,3 +1115,5 @@ for _, obj in pairs(game:GetDescendants()) do
         stroke.Parent = obj
     end
 end
+
+return Library
