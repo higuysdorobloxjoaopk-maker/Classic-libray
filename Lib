@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Função auxiliar para arrastar a GUI
+-- Gerenciador de arrastar (Draggable)
 local function MakeDraggable(topBar, mainFrame)
 	local dragging, dragStart, startPos
 	topBar.InputBegan:Connect(function(input)
@@ -33,12 +33,13 @@ function SuperClassicLib:CreateWindow(name, customPos)
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "SuperClassic_" .. name
 	ScreenGui.ResetOnSpawn = false
+	ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 	local Main = Instance.new("Frame")
 	Main.Name = "Main"
-	Main.Size = UDim2.new(0, 480, 0, 320)
-	Main.Position = customPos or UDim2.new(0.5, -240, 0.5, -160)
+	Main.Size = UDim2.new(0, 460, 0, 300)
+	Main.Position = customPos or UDim2.new(0.5, -230, 0.5, -150)
 	Main.BackgroundColor3 = Color3.new(1, 1, 1)
 	Main.BackgroundTransparency = 0.75
 	Main.BorderSizePixel = 0
@@ -46,7 +47,7 @@ function SuperClassicLib:CreateWindow(name, customPos)
 	Main.Parent = ScreenGui
 
 	local TopBar = Instance.new("Frame")
-	TopBar.Size = UDim2.new(1, 0, 0, 30)
+	TopBar.Size = UDim2.new(1, 0, 0, 25)
 	TopBar.BackgroundColor3 = Color3.new(1, 1, 1)
 	TopBar.BackgroundTransparency = 0.75
 	TopBar.BorderSizePixel = 0
@@ -58,14 +59,14 @@ function SuperClassicLib:CreateWindow(name, customPos)
 	Title.BackgroundTransparency = 1
 	Title.Text = name:upper()
 	Title.Font = Enum.Font.GothamBold
-	Title.TextSize = 13
+	Title.TextSize = 12
 	Title.TextColor3 = Color3.new(0, 0, 0)
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	Title.Parent = TopBar
 
 	local CloseBtn = Instance.new("TextButton")
-	CloseBtn.Size = UDim2.new(0, 30, 1, 0)
-	CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+	CloseBtn.Size = UDim2.new(0, 25, 1, 0)
+	CloseBtn.Position = UDim2.new(1, -25, 0, 0)
 	CloseBtn.Text = "X"
 	CloseBtn.Font = Enum.Font.GothamBold
 	CloseBtn.TextColor3 = Color3.new(0,0,0)
@@ -73,10 +74,11 @@ function SuperClassicLib:CreateWindow(name, customPos)
 	CloseBtn.Parent = TopBar
 	CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
+	-- Sidebar Fina e Alta
 	local Sidebar = Instance.new("Frame")
 	Sidebar.Name = "Sidebar"
-	Sidebar.Size = UDim2.new(0, 110, 1, -30)
-	Sidebar.Position = UDim2.new(0, 0, 0, 30)
+	Sidebar.Size = UDim2.new(0, 40, 1, -25) -- Fina (40px)
+	Sidebar.Position = UDim2.new(0, 0, 0, 25)
 	Sidebar.BackgroundColor3 = Color3.new(1, 1, 1)
 	Sidebar.BackgroundTransparency = 0.85
 	Sidebar.BorderSizePixel = 0
@@ -88,8 +90,8 @@ function SuperClassicLib:CreateWindow(name, customPos)
 
 	local Container = Instance.new("Frame")
 	Container.Name = "Container"
-	Container.Size = UDim2.new(1, -120, 1, -40)
-	Container.Position = UDim2.new(0, 115, 0, 35)
+	Container.Size = UDim2.new(1, -50, 1, -35)
+	Container.Position = UDim2.new(0, 45, 0, 30)
 	Container.BackgroundTransparency = 1
 	Container.Parent = Main
 
@@ -97,22 +99,30 @@ function SuperClassicLib:CreateWindow(name, customPos)
 
 	local Tabs = { ActiveTab = nil }
 
-	function Tabs:CreateTab(tabName)
+	function Tabs:CreateTab(tabIconText)
 		local TabBtn = Instance.new("TextButton")
-		TabBtn.Size = UDim2.new(1, 0, 0, 35)
+		TabBtn.Size = UDim2.new(1, 0, 0, 50) -- Guia alta (50px)
 		TabBtn.BackgroundTransparency = 1
-		TabBtn.Text = tabName
-		TabBtn.Font = Enum.Font.Gotham
-		TabBtn.TextSize = 12
+		TabBtn.Text = tabIconText
+		TabBtn.Font = Enum.Font.GothamBold
+		TabBtn.TextSize = 10
 		TabBtn.TextColor3 = Color3.new(0, 0, 0)
 		TabBtn.BorderSizePixel = 0
 		TabBtn.Parent = Sidebar
+
+		local SelectionMarker = Instance.new("Frame")
+		SelectionMarker.Size = UDim2.new(0, 3, 0.8, 0)
+		SelectionMarker.Position = UDim2.new(0, 0, 0.1, 0)
+		SelectionMarker.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+		SelectionMarker.BorderSizePixel = 0
+		SelectionMarker.Visible = false
+		SelectionMarker.Parent = TabBtn
 
 		local Page = Instance.new("ScrollingFrame")
 		Page.Size = UDim2.new(1, 0, 1, 0)
 		Page.BackgroundTransparency = 1
 		Page.Visible = false
-		Page.ScrollBarThickness = 2
+		Page.ScrollBarThickness = 1
 		Page.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
 		Page.CanvasSize = UDim2.new(0, 0, 0, 0)
 		Page.Parent = Container
@@ -130,111 +140,111 @@ function SuperClassicLib:CreateWindow(name, customPos)
 			for _, v in pairs(Container:GetChildren()) do v.Visible = false end
 			for _, v in pairs(Sidebar:GetChildren()) do 
 				if v:IsA("TextButton") then 
-					TweenService:Create(v, TweenInfo.new(0.2), {BackgroundTransparency = 1, BackgroundColor3 = Color3.new(1,1,1)}):Play()
+					v.SelectionMarker.Visible = false
+					TweenService:Create(v, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
 				end 
 			end
 			Page.Visible = true
-			TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play()
+			SelectionMarker.Visible = true
+			TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.5, BackgroundColor3 = Color3.fromRGB(0, 170, 255)}):Play()
 		end)
 
 		if not Tabs.ActiveTab then
 			Page.Visible = true
-			TabBtn.BackgroundTransparency = 0.4
+			SelectionMarker.Visible = true
+			TabBtn.BackgroundTransparency = 0.5
 			TabBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-			Tabs.ActiveTab = tabName
+			Tabs.ActiveTab = tabIconText
 		end
 
 		local Sections = {}
 
 		function Sections:CreateSection(secName)
 			local SectionFrame = Instance.new("Frame")
-			SectionFrame.Size = UDim2.new(1, -5, 0, 30)
+			SectionFrame.Size = UDim2.new(1, -5, 0, 26)
 			SectionFrame.BackgroundColor3 = Color3.new(1,1,1)
 			SectionFrame.BackgroundTransparency = 0.9
 			SectionFrame.ClipsDescendants = true
 			SectionFrame.Parent = Page
 
 			local SecBtn = Instance.new("TextButton")
-			SecBtn.Size = UDim2.new(1, 0, 0, 30)
+			SecBtn.Size = UDim2.new(1, 0, 0, 26)
 			SecBtn.BackgroundTransparency = 1
-			SecBtn.Text = "  [+] " .. secName
+			SecBtn.Text = "  ▼ " .. secName
 			SecBtn.Font = Enum.Font.GothamBold
-			SecBtn.TextSize = 12
-			SecBtn.TextColor3 = Color3.fromRGB(0, 100, 200)
+			SecBtn.TextSize = 11
+			SecBtn.TextColor3 = Color3.fromRGB(0, 140, 255)
 			SecBtn.TextXAlignment = Enum.TextXAlignment.Left
 			SecBtn.Parent = SectionFrame
 
 			local SecContent = Instance.new("Frame")
-			SecContent.Position = UDim2.new(0, 0, 0, 30)
+			SecContent.Position = UDim2.new(0, 0, 0, 26)
 			SecContent.Size = UDim2.new(1, 0, 0, 0)
 			SecContent.BackgroundTransparency = 1
 			SecContent.Parent = SectionFrame
 
 			local SecLayout = Instance.new("UIListLayout")
 			SecLayout.Parent = SecContent
-			SecLayout.Padding = UDim.new(0, 5)
+			SecLayout.Padding = UDim.new(0, 4)
 			SecLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 			local isOpen = false
 			SecBtn.MouseButton1Click:Connect(function()
 				isOpen = not isOpen
-				local targetHeight = isOpen and (SecLayout.AbsoluteContentSize.Y + 35) or 30
-				TweenService:Create(SectionFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -5, 0, targetHeight)}):Play()
-				SecBtn.Text = isOpen and "  [-] " .. secName or "  [+] " .. secName
+				local targetHeight = isOpen and (SecLayout.AbsoluteContentSize.Y + 30) or 26
+				TweenService:Create(SectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, -5, 0, targetHeight)}):Play()
+				SecBtn.Text = isOpen and "  ▲ " .. secName or "  ▼ " .. secName
 			end)
 
 			local Elements = {}
 
-			-- Botão que pisca azul (Free Button)
 			function Elements:CreateButton(text, callback)
 				local Btn = Instance.new("TextButton")
-				Btn.Size = UDim2.new(0.95, 0, 0, 28)
+				Btn.Size = UDim2.new(0.95, 0, 0, 24)
 				Btn.BackgroundColor3 = Color3.new(1, 1, 1)
-				Btn.BackgroundTransparency = 0.6
+				Btn.BackgroundTransparency = 0.4
 				Btn.Text = text
 				Btn.Font = Enum.Font.Gotham
-				Btn.TextSize = 12
+				Btn.TextSize = 11
 				Btn.TextColor3 = Color3.new(0, 0, 0)
 				Btn.Parent = SecContent
 
 				Btn.MouseButton1Click:Connect(function()
-					local oldColor = Btn.BackgroundColor3
 					Btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-					task.wait(0.15)
-					Btn.BackgroundColor3 = oldColor
+					task.wait(0.1)
+					Btn.BackgroundColor3 = Color3.new(1, 1, 1)
 					callback()
 				end)
 			end
 
-			-- Toggle (Fica azul quando ativo)
 			function Elements:CreateToggle(text, callback)
 				local TglFrame = Instance.new("Frame")
-				TglFrame.Size = UDim2.new(0.95, 0, 0, 28)
+				TglFrame.Size = UDim2.new(0.95, 0, 0, 24)
 				TglFrame.BackgroundTransparency = 1
 				TglFrame.Parent = SecContent
 
 				local TglBtn = Instance.new("TextButton")
-				TglBtn.Size = UDim2.new(0, 45, 0, 22)
-				TglBtn.Position = UDim2.new(0, 5, 0.5, -11)
+				TglBtn.Size = UDim2.new(0, 38, 0, 18)
+				TglBtn.Position = UDim2.new(0, 5, 0.5, -9)
 				TglBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 				TglBtn.Text = ""
 				TglBtn.BorderSizePixel = 0
 				TglBtn.Parent = TglFrame
 
 				local Ball = Instance.new("Frame")
-				Ball.Size = UDim2.new(0, 18, 0, 18)
-				Ball.Position = UDim2.new(0, 2, 0.5, -9)
+				Ball.Size = UDim2.new(0, 14, 0, 14)
+				Ball.Position = UDim2.new(0, 2, 0.5, -7)
 				Ball.BackgroundColor3 = Color3.new(1, 1, 1)
 				Ball.BorderSizePixel = 0
 				Ball.Parent = TglBtn
 
 				local Lbl = Instance.new("TextLabel")
-				Lbl.Position = UDim2.new(0, 55, 0, 0)
-				Lbl.Size = UDim2.new(1, -55, 1, 0)
+				Lbl.Position = UDim2.new(0, 48, 0, 0)
+				Lbl.Size = UDim2.new(1, -48, 1, 0)
 				Lbl.BackgroundTransparency = 1
 				Lbl.Text = text
 				Lbl.Font = Enum.Font.Gotham
-				Lbl.TextSize = 12
+				Lbl.TextSize = 11
 				Lbl.TextColor3 = Color3.new(0,0,0)
 				Lbl.TextXAlignment = Enum.TextXAlignment.Left
 				Lbl.Parent = TglFrame
@@ -243,30 +253,29 @@ function SuperClassicLib:CreateWindow(name, customPos)
 				TglBtn.MouseButton1Click:Connect(function()
 					active = not active
 					TweenService:Create(TglBtn, TweenInfo.new(0.2), {BackgroundColor3 = active and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(200, 200, 200)}):Play()
-					TweenService:Create(Ball, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)}):Play()
+					TweenService:Create(Ball, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
 					callback(active)
 				end)
 			end
 
-			-- Slider
 			function Elements:CreateSlider(text, min, max, default, callback)
 				local SldFrame = Instance.new("Frame")
-				SldFrame.Size = UDim2.new(0.95, 0, 0, 45)
+				SldFrame.Size = UDim2.new(0.95, 0, 0, 36)
 				SldFrame.BackgroundTransparency = 1
 				SldFrame.Parent = SecContent
 
 				local Lbl = Instance.new("TextLabel")
-				Lbl.Size = UDim2.new(1, 0, 0, 20)
+				Lbl.Size = UDim2.new(1, 0, 0, 18)
 				Lbl.BackgroundTransparency = 1
 				Lbl.Text = text .. ": " .. default
 				Lbl.Font = Enum.Font.Gotham
-				Lbl.TextSize = 11
+				Lbl.TextSize = 10
 				Lbl.TextColor3 = Color3.new(0,0,0)
 				Lbl.Parent = SldFrame
 
 				local BarBG = Instance.new("Frame")
-				BarBG.Size = UDim2.new(0.9, 0, 0, 6)
-				BarBG.Position = UDim2.new(0.05, 0, 0, 28)
+				BarBG.Size = UDim2.new(0.9, 0, 0, 4)
+				BarBG.Position = UDim2.new(0.05, 0, 0, 24)
 				BarBG.BackgroundColor3 = Color3.fromRGB(200,200,200)
 				BarBG.BorderSizePixel = 0
 				BarBG.Parent = SldFrame
