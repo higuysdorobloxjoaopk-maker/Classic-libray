@@ -1,312 +1,302 @@
-local library = {}
-local windowCount = 0
-local sizes = {}
-local listOffset = {}
-local windows = {}
-local pastSliders = {}
-local dropdowns = {}
-local dropdownSizes = {}
-local destroyed
+local Lib = {}
 
-local colorPickers = {}
+Lib.Name = "super classic lib"
+Lib.Version = "1.0"
+Lib.Flags = {}
+Lib.Connections = {}
+Lib.Windows = {}
 
-if game.CoreGui:FindFirstChild('TurtleUiLib') then
-    game.CoreGui:FindFirstChild('TurtleUiLib'):Destroy()
-    destroyed = true
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local theme = {
+	bg = Color3.new(1,1,1),
+	transparency = 0.75,
+	accent = Color3.fromRGB(0,120,255),
+	text = Color3.new(0,0,0)
+}
+
+local function dragify(top, frame)
+	local dragging, dragStart, startPos = false, nil, nil
+	top.InputBegan:Connect(function(input)
+		if input.UserInputType.Name:find("Mouse") or input.UserInputType.Name == "Touch" then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+		end
+	end)
+	UIS.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType.Name:find("Mouse") or input.UserInputType.Name == "Touch") then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+	UIS.InputEnded:Connect(function(input)
+		if input.UserInputType.Name:find("Mouse") or input.UserInputType.Name == "Touch" then
+			dragging = false
+		end
+	end)
 end
 
-function Lerp(a, b, c)
-    return a + ((b - a) * c)
+function Lib:CreateWindow(title, size)
+	title = title or Lib.Name
+	size = size or UDim2.new(0,400,0,300)
+
+	local ScreenGui = Instance.new("ScreenGui")
+	ScreenGui.ResetOnSpawn = false
+	ScreenGui.Parent = PlayerGui
+
+	local Main = Instance.new("Frame")
+	Main.Size = size
+	Main.Position = UDim2.new(0.5,-size.X.Offset/2,0.5,-size.Y.Offset/2)
+	Main.BackgroundColor3 = theme.bg
+	Main.BackgroundTransparency = theme.transparency
+	Main.BorderSizePixel = 0
+	Main.Parent = ScreenGui
+
+	local Top = Instance.new("Frame")
+	Top.Size = UDim2.new(1,0,0,30)
+	Top.BackgroundColor3 = theme.bg
+	Top.BackgroundTransparency = theme.transparency
+	Top.BorderSizePixel = 0
+	Top.Parent = Main
+
+	local TitleLabel = Instance.new("TextLabel")
+	TitleLabel.Size = UDim2.new(1,0,1,0)
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.Text = title
+	TitleLabel.Font = Enum.Font.GothamBold
+	TitleLabel.TextSize = 14
+	TitleLabel.TextColor3 = theme.text
+	TitleLabel.Parent = Top
+
+	-- Close / Minimize Buttons
+	local MinBtn = Instance.new("TextButton")
+	MinBtn.Size = UDim2.new(0,30,1,0)
+	MinBtn.Position = UDim2.new(1,-60,0,0)
+	MinBtn.Text = "-"
+	MinBtn.Font = Enum.Font.GothamBold
+	MinBtn.TextSize = 18
+	MinBtn.BackgroundTransparency = 1
+	MinBtn.TextColor3 = theme.text
+	MinBtn.Parent = Top
+
+	local CloseBtn = Instance.new("TextButton")
+	CloseBtn.Size = UDim2.new(0,30,1,0)
+	CloseBtn.Position = UDim2.new(1,-30,0,0)
+	CloseBtn.Text = "X"
+	CloseBtn.Font = Enum.Font.GothamBold
+	CloseBtn.TextSize = 14
+	CloseBtn.BackgroundTransparency = 1
+	CloseBtn.TextColor3 = theme.text
+	CloseBtn.Parent = Top
+
+	local Sidebar = Instance.new("Frame")
+	Sidebar.Size = UDim2.new(0,120,1,-30)
+	Sidebar.Position = UDim2.new(0,0,0,30)
+	Sidebar.BackgroundTransparency = 1
+	Sidebar.Parent = Main
+
+	local SideList = Instance.new("UIListLayout")
+	SideList.Parent = Sidebar
+
+	local Container = Instance.new("Frame")
+	Container.Size = UDim2.new(1,-120,1,-30)
+	Container.Position = UDim2.new(0,120,0,30)
+	Container.BackgroundTransparency = 1
+	Container.Parent = Main
+
+	dragify(Top, Main)
+
+	local minimized = false
+	MinBtn.MouseButton1Click:Connect(function()
+		minimized = not minimized
+		for _,v in pairs(Container:GetChildren()) do v.Visible = not minimized end
+		Main.Size = minimized and UDim2.new(0,size.X.Offset,0,30) or size
+	end)
+	CloseBtn.MouseButton1Click:Connect(function()
+		ScreenGui:Destroy()
+	end)
+
+	local Window = {}
+	Window.Tabs = {}
+
+	function Window:CreateTab(name)
+		local TabButton = Instance.new("TextButton")
+		TabButton.Size = UDim2.new(1,0,0,30)
+		TabButton.Text = name
+		TabButton.Font = Enum.Font.Gotham
+		TabButton.TextSize = 14
+		TabButton.BackgroundColor3 = theme.bg
+		TabButton.BackgroundTransparency = theme.transparency
+		TabButton.TextColor3 = theme.text
+		TabButton.Parent = Sidebar
+
+		local TabFrame = Instance.new("ScrollingFrame")
+		TabFrame.Size = UDim2.new(1,0,1,0)
+		TabFrame.CanvasSize = UDim2.new(0,0,0,0)
+		TabFrame.ScrollBarThickness = 4
+		TabFrame.Visible = false
+		TabFrame.BackgroundTransparency = 1
+		TabFrame.Parent = Container
+
+		local Layout = Instance.new("UIListLayout")
+		Layout.Parent = TabFrame
+		Layout.Padding = UDim.new(0,5)
+		Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			TabFrame.CanvasSize = UDim2.new(0,0,0,Layout.AbsoluteContentSize.Y)
+		end)
+
+		TabButton.MouseButton1Click:Connect(function()
+			for _,t in pairs(Container:GetChildren()) do
+				if t:IsA("ScrollingFrame") then t.Visible = false end
+			end
+			for _,b in pairs(Sidebar:GetChildren()) do
+				if b:IsA("TextButton") then b.BackgroundColor3 = theme.bg end
+			end
+			TabFrame.Visible = true
+			TabButton.BackgroundColor3 = theme.accent
+		end)
+
+		local Tab = {}
+		function Tab:CreateButton(text, callback)
+			local Btn = Instance.new("TextButton")
+			Btn.Size = UDim2.new(1,-10,0,30)
+			Btn.Text = text
+			Btn.Font = Enum.Font.Gotham
+			Btn.TextSize = 14
+			Btn.BackgroundColor3 = theme.bg
+			Btn.BackgroundTransparency = theme.transparency
+			Btn.TextColor3 = theme.text
+			Btn.Parent = TabFrame
+			Btn.MouseButton1Click:Connect(function()
+				Btn.BackgroundColor3 = theme.accent
+				task.delay(0.2,function() Btn.BackgroundColor3 = theme.bg end)
+				if callback then callback() end
+			end)
+			return Btn
+		end
+
+		function Tab:CreateToggle(text, callback)
+			local state = false
+			local Btn = Instance.new("TextButton")
+			Btn.Size = UDim2.new(1,-10,0,30)
+			Btn.Text = text
+			Btn.Font = Enum.Font.Gotham
+			Btn.TextSize = 14
+			Btn.BackgroundColor3 = theme.bg
+			Btn.BackgroundTransparency = theme.transparency
+			Btn.TextColor3 = theme.text
+			Btn.Parent = TabFrame
+
+			local Toggle = {}
+			function Toggle:Set(value)
+				state = value
+				Btn.BackgroundColor3 = state and theme.accent or theme.bg
+				if callback then callback(state) end
+			end
+			function Toggle:Get()
+				return state
+			end
+			Btn.MouseButton1Click:Connect(function()
+				Toggle:Set(not state)
+			end)
+			return Toggle
+		end
+
+		function Tab:CreateSlider(text, min, max, callback)
+			local value = min
+			local Frame = Instance.new("Frame")
+			Frame.Size = UDim2.new(1,-10,0,40)
+			Frame.BackgroundTransparency = 1
+			Frame.Parent = TabFrame
+			local Btn = Instance.new("TextButton")
+			Btn.Size = UDim2.new(1,0,1,0)
+			Btn.Text = text..": "..value
+			Btn.Font = Enum.Font.Gotham
+			Btn.TextSize = 14
+			Btn.BackgroundColor3 = theme.bg
+			Btn.BackgroundTransparency = theme.transparency
+			Btn.TextColor3 = theme.text
+			Btn.Parent = Frame
+			local dragging = false
+			Btn.InputBegan:Connect(function(input)
+				if input.UserInputType.Name:find("Mouse") or input.UserInputType.Name == "Touch" then dragging = true end
+			end)
+			UIS.InputEnded:Connect(function() dragging = false end)
+			UIS.InputChanged:Connect(function(input)
+				if dragging then
+					local percent = math.clamp((input.Position.X - Btn.AbsolutePosition.X)/Btn.AbsoluteSize.X,0,1)
+					value = math.floor(min + (max-min)*percent)
+					Btn.Text = text..": "..value
+					if callback then callback(value) end
+				end
+			end)
+			return Frame
+		end
+
+		function Tab:CreateDropdown(text, list, callback)
+			local open = false
+			local MainBtn = Instance.new("TextButton")
+			MainBtn.Size = UDim2.new(1,-10,0,30)
+			MainBtn.Text = text
+			MainBtn.Font = Enum.Font.Gotham
+			MainBtn.TextSize = 14
+			MainBtn.BackgroundColor3 = theme.bg
+			MainBtn.BackgroundTransparency = theme.transparency
+			MainBtn.TextColor3 = theme.text
+			MainBtn.Parent = TabFrame
+
+			local DropFrame = Instance.new("Frame")
+			DropFrame.Size = UDim2.new(1,-10,0,0)
+			DropFrame.ClipsDescendants = true
+			DropFrame.BackgroundTransparency = 1
+			DropFrame.Parent = TabFrame
+
+			local Layout = Instance.new("UIListLayout")
+			Layout.Parent = DropFrame
+
+			for _,v in pairs(list) do
+				local Item = Instance.new("TextButton")
+				Item.Size = UDim2.new(1,0,0,30)
+				Item.Text = v
+				Item.Font = Enum.Font.Gotham
+				Item.TextSize = 14
+				Item.BackgroundColor3 = theme.bg
+				Item.BackgroundTransparency = theme.transparency
+				Item.TextColor3 = theme.text
+				Item.Parent = DropFrame
+
+				Item.MouseButton1Click:Connect(function()
+					if callback then callback(v) end
+				end)
+			end
+
+			MainBtn.MouseButton1Click:Connect(function()
+				open = not open
+				DropFrame.Size = open and UDim2.new(1,-10,0,#list*30) or UDim2.new(1,-10,0,0)
+			end)
+
+			return DropFrame
+		end
+
+		if not Container:FindFirstChildWhichIsA("ScrollingFrame").Visible then
+			TabFrame.Visible = true
+			TabButton.BackgroundColor3 = theme.accent
+		end
+
+		return Tab
+	end
+
+	Lib.Windows[#Lib.Windows+1] = Window
+	return Window
 end
 
-local players = game:service('Players');
-local player = players.LocalPlayer;
-local mouse = player:GetMouse();
-local run = game:service('RunService');
-local stepped = run.Stepped;
-
-function Dragify(obj)
-	spawn(function()
-		local minitial;
-		local initial;
-		local isdragging;
-	    obj.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				isdragging = true;
-				minitial = input.Position;
-				initial = obj.Position;
-				local con;
-                con = stepped:Connect(function()
-        			if isdragging then
-						local delta = Vector3.new(mouse.X, mouse.Y, 0) - minitial;
-						obj.Position = UDim2.new(initial.X.Scale, initial.X.Offset + delta.X, initial.Y.Scale, initial.Y.Offset + delta.Y);
-					else
-						con:Disconnect();
-					end;
-                end);
-                input.Changed:Connect(function()
-    			    if input.UserInputState == Enum.UserInputState.End then
-					    isdragging = false;
-				    end;
-			    end);
-		end;
-	end);
-end)
-end
-
-local function protect_gui(obj) 
-    if destroyed then
-       obj.Parent = game.CoreGui
-       return
-    end
-    if syn and syn.protect_gui then
-        syn.protect_gui(obj)
-        obj.Parent = game.CoreGui
-    elseif PROTOSMASHER_LOADED then
-        obj.Parent = get_hidden_gui()
-    else
-        obj.Parent = game.CoreGui
-    end
-end
-
-local TurtleUiLib = Instance.new("ScreenGui")
-TurtleUiLib.Name = "TurtleUiLib"
-protect_gui(TurtleUiLib)
-
-local xOffset = 20
-local uis = game:GetService("UserInputService")
-local keybindConnection
-
-function library:Destroy()
-    TurtleUiLib:Destroy()
-    if keybindConnection then
-        keybindConnection:Disconnect()
-    end
-end
-
-function library:Hide()
-   TurtleUiLib.Enabled = not TurtleUiLib.Enabled
-end	
-
-function library:Keybind(key)
-    if keybindConnection then keybindConnection:Disconnect() end
-    keybindConnection = uis.InputBegan:Connect(function(input, gp)
-        if not gp and input.KeyCode == Enum.KeyCode[key] then
-            TurtleUiLib.Enabled = not TurtleUiLib.Enabled
-        end
-    end)
-end
-
-function library:Window(name) 
-    windowCount = windowCount + 1
-    local winCount = windowCount
-    local zindex = winCount * 7
-    local UiWindow = Instance.new("Frame")
-
-    UiWindow.Name = "UiWindow"
-    UiWindow.Parent = TurtleUiLib
-    UiWindow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    UiWindow.BackgroundTransparency = 0.5 -- Top bar transparência solicitada
-    UiWindow.BorderSizePixel = 0
-    UiWindow.Position = UDim2.new(0, xOffset, 0, 20)
-    UiWindow.Size = UDim2.new(0, 207, 0, 33)
-    UiWindow.ZIndex = 4 + zindex
-    UiWindow.Active = true
-    Dragify(UiWindow)
-
-    xOffset = xOffset + 230
-
-    local Header = Instance.new("Frame")
-    Header.Name = "Header"
-    Header.Parent = UiWindow
-    Header.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Header.BackgroundTransparency = 0.5
-    Header.BorderSizePixel = 0
-    Header.Position = UDim2.new(0, 0, 0, 0)
-    Header.Size = UDim2.new(0, 207, 0, 26)
-    Header.ZIndex = 5 + zindex
-
-    local HeaderText = Instance.new("TextLabel")
-    HeaderText.Name = "HeaderText"
-    HeaderText.Parent = Header
-    HeaderText.BackgroundTransparency = 1.000
-    HeaderText.Position = UDim2.new(0, 5, 0, 0)
-    HeaderText.Size = UDim2.new(0, 150, 0, 26)
-    HeaderText.ZIndex = 6 + zindex
-    HeaderText.Font = Enum.Font.SourceSansBold
-    HeaderText.Text = name or "Window"
-    HeaderText.TextColor3 = Color3.fromRGB(0, 0, 0)
-    HeaderText.TextSize = 17.000
-    HeaderText.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Botão de Minimizar
-    local Minimise = Instance.new("TextButton")
-    Minimise.Name = "Minimise"
-    Minimise.Parent = Header
-    Minimise.BackgroundTransparency = 1
-    Minimise.Position = UDim2.new(0, 160, 0, 2)
-    Minimise.Size = UDim2.new(0, 22, 0, 22)
-    Minimise.ZIndex = 7 + zindex
-    Minimise.Font = Enum.Font.SourceSansBold
-    Minimise.Text = "-"
-    Minimise.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Minimise.TextSize = 20.000
-
-    -- Botão de Fechar (X) solicitado
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Name = "CloseBtn"
-    CloseBtn.Parent = Header
-    CloseBtn.BackgroundTransparency = 1
-    CloseBtn.Position = UDim2.new(0, 182, 0, 2)
-    CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-    CloseBtn.ZIndex = 7 + zindex
-    CloseBtn.Font = Enum.Font.SourceSansBold
-    CloseBtn.Text = "X"
-    CloseBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
-    CloseBtn.TextSize = 18.000
-    CloseBtn.MouseButton1Up:Connect(function()
-        TurtleUiLib:Destroy()
-    end)
-
-    local Window = Instance.new("Frame")
-    Window.Name = "Window"
-    Window.Parent = Header
-    Window.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Window.BackgroundTransparency = 0.75 -- Fundo transparência solicitada
-    Window.BorderSizePixel = 0
-    Window.Position = UDim2.new(0, 0, 0, 26)
-    Window.Size = UDim2.new(0, 207, 0, 33)
-    Window.ZIndex = 1 + zindex
-
-    Minimise.MouseButton1Up:connect(function()
-        Window.Visible = not Window.Visible
-        Minimise.Text = Window.Visible and "-" or "+"
-    end)
-
-    local functions = {}
-    functions.__index = functions
-    functions.Ui = UiWindow
-
-    sizes[winCount] = 0
-    listOffset[winCount] = 0
-
-    function functions:Button(name, callback)
-        local callback = callback or function() end
-        sizes[winCount] = sizes[winCount] + 32
-        Window.Size = UDim2.new(0, 207, 0, sizes[winCount] + 10)
-        
-        local Button = Instance.new("TextButton")
-        listOffset[winCount] = listOffset[winCount] + 32
-        Button.Name = "Button"
-        Button.Parent = Window
-        Button.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-        Button.BorderColor3 = Color3.fromRGB(200, 200, 200)
-        Button.Position = UDim2.new(0, 12, 0, listOffset[winCount] - 25)
-        Button.Size = UDim2.new(0, 182, 0, 26)
-        Button.ZIndex = 2 + zindex
-        Button.Font = Enum.Font.SourceSans
-        Button.TextColor3 = Color3.fromRGB(0, 0, 0)
-        Button.TextSize = 16.000
-        Button.Text = name or "Button"
-        Button.MouseButton1Down:Connect(callback)
-    end
-
-    function functions:Toggle(text, on, callback)
-        local callback = callback or function() end
-        sizes[winCount] = sizes[winCount] + 32
-        Window.Size = UDim2.new(0, 207, 0, sizes[winCount] + 10)
-        listOffset[winCount] = listOffset[winCount] + 32
-
-        local ToggleDescription = Instance.new("TextLabel")
-        local ToggleButton = Instance.new("TextButton")
-        local ToggleFiller = Instance.new("Frame")
-
-        ToggleDescription.Name = "ToggleDescription"
-        ToggleDescription.Parent = Window
-        ToggleDescription.BackgroundTransparency = 1.000
-        ToggleDescription.Position = UDim2.new(0, 14, 0, listOffset[winCount] - 25)
-        ToggleDescription.Size = UDim2.new(0, 131, 0, 26)
-        ToggleDescription.Font = Enum.Font.SourceSans
-        ToggleDescription.Text = text or "Toggle"
-        ToggleDescription.TextColor3 = Color3.fromRGB(0, 0, 0)
-        ToggleDescription.TextSize = 16.000
-        ToggleDescription.TextXAlignment = Enum.TextXAlignment.Left
-        ToggleDescription.ZIndex = 2 + zindex
-
-        ToggleButton.Name = "ToggleButton"
-        ToggleButton.Parent = ToggleDescription
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        ToggleButton.BorderColor3 = Color3.fromRGB(150, 150, 150)
-        ToggleButton.Position = UDim2.new(1.2, 0, 0.1, 0)
-        ToggleButton.Size = UDim2.new(0, 22, 0, 22)
-        ToggleButton.Text = ""
-        ToggleButton.ZIndex = 2 + zindex
-
-        ToggleFiller.Name = "ToggleFiller"
-        ToggleFiller.Parent = ToggleButton
-        ToggleFiller.BackgroundColor3 = Color3.fromRGB(68, 189, 50)
-        ToggleFiller.BorderSizePixel = 0
-        ToggleFiller.Position = UDim2.new(0, 4, 0, 4)
-        ToggleFiller.Size = UDim2.new(0, 14, 0, 14)
-        ToggleFiller.Visible = on
-        ToggleFiller.ZIndex = 3 + zindex
-
-        local function toggle()
-            ToggleFiller.Visible = not ToggleFiller.Visible
-            callback(ToggleFiller.Visible)
-        end
-
-        ToggleButton.MouseButton1Up:Connect(toggle)
-
-        -- Função para definir via script solicitada
-        local toggleFuncs = {}
-        function toggleFuncs:Set(state)
-            ToggleFiller.Visible = state
-            callback(state)
-        end
-        return toggleFuncs
-    end
-
-    function functions:Label(text)
-        sizes[winCount] = sizes[winCount] + 32
-        Window.Size = UDim2.new(0, 207, 0, sizes[winCount] + 10)
-        listOffset[winCount] = listOffset[winCount] + 32
-        
-        local Label = Instance.new("TextLabel")
-        Label.Parent = Window
-        Label.BackgroundTransparency = 1
-        Label.Position = UDim2.new(0, 0, 0, listOffset[winCount] - 25)
-        Label.Size = UDim2.new(0, 207, 0, 26)
-        Label.Font = Enum.Font.SourceSans
-        Label.TextColor3 = Color3.fromRGB(0, 0, 0)
-        Label.Text = text or "Label"
-        Label.TextSize = 16.000
-        Label.ZIndex = 2 + zindex
-    end
-
-    function functions:Box(text, callback)
-        local callback = callback or function() end
-        sizes[winCount] = sizes[winCount] + 32
-        Window.Size = UDim2.new(0, 207, 0, sizes[winCount] + 10)
-        listOffset[winCount] = listOffset[winCount] + 32
-
-        local TextBox = Instance.new("TextBox")
-        TextBox.Parent = Window
-        TextBox.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-        TextBox.Position = UDim2.new(0, 99, 0, listOffset[winCount] - 25)
-        TextBox.Size = UDim2.new(0, 95, 0, 26)
-        TextBox.Font = Enum.Font.SourceSans
-        TextBox.PlaceholderText = "..."
-        TextBox.Text = ""
-        TextBox.TextColor3 = Color3.fromRGB(0, 0, 0)
-        TextBox.ZIndex = 2 + zindex
-        
-        TextBox.FocusLost:Connect(function()
-            callback(TextBox.Text)
-        end)
-    end
-
-    return functions
-end
-
-return library
+return Lib
